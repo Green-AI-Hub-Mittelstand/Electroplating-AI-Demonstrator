@@ -28,7 +28,7 @@
                 "y": 0
             },
             "id": 9,
-            "title": "Row title",
+            "title": "Vorhersagen",
             "type": "row"
         },
         {
@@ -128,7 +128,7 @@
                                 "1": {
                                     "color": "dark-red",
                                     "index": 1,
-                                    "text": "Konatimination"
+                                    "text": "Kontamination"
                                 },
                                 "2": {
                                     "color": "dark-red",
@@ -208,7 +208,7 @@
             },
             "id": 5,
             "panels": [],
-            "title": "Row title",
+            "title": "Sensordaten",
             "type": "row"
         },
         {
