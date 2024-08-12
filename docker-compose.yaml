@@ -1,0 +1,94 @@
+version: "3"
+
+services:
+  mosquitto:
+    image: eclipse-mosquitto:latest
+    container_name: mosquitto
+    restart: always
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    networks:
+      - iot
+    volumes:
+      - ./iot-telemetry/mosquitto.conf:/mosquitto/config/mosquitto.conf
+  
+  influxdb:
+    image: influxdb:latest
+    container_name: influxdb
+    restart: always
+    ports:
+      - "8086:8086"
+    networks:
+      - iot
+    volumes:
+      - 4p-influxdb-data:/var/lib/influxdb2
+      - 4p-influxdb-config:/etc/influxdb2
+      - ./iot-telemetry/influxdb-provisioning:/docker-entrypoint-initdb.d
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=user
+      - DOCKER_INFLUXDB_INIT_PASSWORD=password1234
+      - DOCKER_INFLUXDB_INIT_ORG=some_org
+      - DOCKER_INFLUXDB_INIT_BUCKET=sensordata
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=4eYvsu8wZCJ6tKuE2sxvFHkvYFwSMVK0011hEEiojvejzpSaij86vYQomN_12au6eK-2MZ6Knr-Sax201y70w==
+  
+  telegraf:
+    image: telegraf
+    container_name: telegraf
+    restart: always
+    volumes:
+      - ./iot-telemetry/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+    depends_on:
+      - mosquitto
+      - influxdb
+    networks:
+      - iot
+  
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    restart: always
+    ports:
+      - "3000:3000"
+    networks:
+      - iot
+    volumes:
+      - ./iot-telemetry/grafana-provisioning:/etc/grafana/provisioning
+      - 4p-grafana-data:/var/lib/grafana
+    depends_on:
+      - influxdb
+  digital_bath:
+    build: 
+      context: digital_bath
+    environment:
+      - MQTT=mosquitto
+    depends_on:
+      - influxdb
+      - mosquitto
+    ports:
+      - "5010:5001"
+    restart: always
+    networks:
+      - iot
+  agent:
+    build:
+      context: anomaly-detection
+    environment:
+      - INFLUXDB_TOKEN=4eYvsu8wZCJ6tKuE2sxvFHkvYFwSMVK0011hEEiojvejzpSaij86vYQomN_12au6eK-2MZ6Knr-Sax201y70w==
+      - MQTT_ADDRESS=mosquitto
+      - INFLUXDB_ADDRESS=influxdb
+      - BUCKET=predictions
+    depends_on:
+      - influxdb
+      - mosquitto
+    networks:
+      - iot
+
+networks:
+  iot:
+
+volumes:
+  4p-grafana-data:
+  4p-influxdb-data:
+  4p-influxdb-config:
